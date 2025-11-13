@@ -18,8 +18,6 @@ export default async function handler(req, res) {
     return; // requireAuth 会自动响应
   }
 
-  // --- [ 修正点 1 ] ---
-  // 将 extToMime 函数移动到 handler 内部
   function extToMime(ext) {
     switch (ext) {
       case '.webp': return 'image/webp';
@@ -31,8 +29,8 @@ export default async function handler(req, res) {
   }
 
   let uploadedUrl = null;
+  let fileReceived = false; // <--- [修正点 1] 添加一个标志
 
-  // 使用 Promise 来等待 Busboy 完成
   const done = new Promise((_resolve, _reject) => {
     const bb = Busboy({
       headers: req.headers,
@@ -40,10 +38,9 @@ export default async function handler(req, res) {
     });
 
     bb.on('file', (name, file, info) => {
+      fileReceived = true; // <--- [修正点 2] 标记我们收到了文件
       const { filename } = info;
 
-      // 必须使用 async IIFE (立即执行的异步函数) 
-      // 才能在 'file' 事件处理器中安全地使用 await
       (async () => {
         try {
           const chunks = [];
@@ -52,15 +49,12 @@ export default async function handler(req, res) {
           }
           const buf = Buffer.concat(chunks);
 
-          // 图像处理
-          const img = sharp(buf).rotate(); // .rotate() 修正 EXIF 方向
+          // ... (图像处理和 R2 上传的代码不变) ...
+          const img = sharp(buf).rotate();
           const meta = await img.metadata();
-
           if (meta.width && meta.width > IMAGE_MAX_WIDTH) {
             img.resize({ width: IMAGE_MAX_WIDTH });
           }
-
-          // 压缩与格式转换
           let outBuf, outExt;
           if (IMAGE_FORMAT === 'orig') {
             if ((meta.format || '').startsWith('png')) { outBuf = await img.png({ compressionLevel: 8 }).toBuffer(); outExt = '.png'; }
@@ -70,46 +64,41 @@ export default async function handler(req, res) {
             outBuf = await img.webp({ quality: IMAGE_QUALITY }).toBuffer();
             outExt = '.webp';
           }
-
-          // 生成唯一文件名
           const hash = crypto.createHash('sha256').update(outBuf).digest('hex').slice(0, 16);
           const now = new Date();
           const y = now.getUTCFullYear();
-          const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+          const m = String(now.getUTCFullYear() + 1).padStart(2, '0');
           const d = String(now.getUTCDate()).padStart(2, '0');
           const safeBase = (filename || 'upload').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9_.-]/g, '').slice(-40) || 'file';
           const key = `${y}/${m}/${d}/${hash}-${safeBase.replace(/\.[^.]+$/, '')}${outExt}`;
-
-          // 上传到 R2
           uploadedUrl = await putObject({ bucket: process.env.R2_BUCKET, key, body: outBuf, contentType: extToMime(outExt) });
-          _resolve(); // 成功
+          
+          _resolve(); // 只有当上传成功后，才 resolve
         
         } catch (err) {
-          _reject(err); // 图像处理或上传失败
+          _reject(err);
         }
-      })(); // 立即执行
+      })();
 
       file.on('limit', () => {
         _reject(new Error('文件过大'));
-        bb.destroy(); // 文件过大时，立即停止处理
+        bb.destroy();
       });
-    }); // bb.on('file') 结束
+    });
 
     bb.on('error', _reject);
     bb.on('finish', () => {
-      // 当没有文件（或只有字段）时，finish 可能会在 file 之前触发
-      // 我们依赖 'file' 里的 _resolve()
-      if (!uploadedUrl) {
-         _resolve(); // 允许 'finish'
+      // --- [修正点 3] ---
+      // 只有在 *没有* 收到文件的情况下，finish 才负责 resolve。
+      // 如果收到了文件，'file' 事件会负责 resolve。
+      if (!fileReceived) {
+        _resolve();
       }
     });
 
     req.pipe(bb);
-  }); // Promise 结束
+  });
 
-  // --- [ 修正点 2 ] ---
-  // 这是 handler 函数的 try...catch
-  // 并且后面不再有多余的 `}`
   try {
     await done;
     if (!uploadedUrl) return badRequest(res, '未接收到文件');
@@ -117,4 +106,4 @@ export default async function handler(req, res) {
   } catch (err) {
     res.status(400).end(err.message || '上传失败');
   }
-} // 这是 handler 函数的正确结尾
+}
