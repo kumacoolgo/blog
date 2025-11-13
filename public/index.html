@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <!-- 注意这里是 /styles.css，而不是 /public/styles.css -->
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -22,8 +23,9 @@
   </header>
 
   <main class="container">
+    <!-- 个人资料卡片 -->
     <section class="profile">
-      <img id="avatar" class="avatar" src="/public/default-avatar.png" alt="avatar" />
+      <img id="avatar" class="avatar" src="/default-avatar.png" alt="avatar" />
       <div class="info">
         <h1 id="display-name">Your Name</h1>
         <p id="bio">这里是简介</p>
@@ -31,8 +33,10 @@
       </div>
     </section>
 
+    <!-- 链接列表 -->
     <ul id="links" class="links"></ul>
 
+    <!-- 添加链接按钮（登录后显示） -->
     <button id="add-link" class="btn dashed hidden">＋ 添加链接</button>
   </main>
 
@@ -85,6 +89,7 @@
     </form>
   </dialog>
 
+  <!-- 注意这里是 /app.js -->
   <script src="/app.js" type="module"></script>
 </body>
 </html>
