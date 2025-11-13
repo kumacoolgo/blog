@@ -1,52 +1,90 @@
 <!doctype html>
-<label>账号 <input name="username" required /></label>
-<label>密码 <input name="password" type="password" required /></label>
-<div class="actions">
-<button class="btn" value="cancel">取消</button>
-<button class="btn primary" value="confirm">登录</button>
-</div>
-</form>
-</dialog>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>我的链接页</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/public/styles.css" />
+</head>
+<body>
+  <div id="bg" class="bg"></div>
 
+  <header class="topbar">
+    <div class="brand">@<span id="profile-name">YourName</span></div>
+    <button id="login-btn" class="btn primary right">登录</button>
+    <div id="user-menu" class="user-menu hidden">
+      <span id="logged-name"></span>
+      <button id="logout-btn" class="btn">退出</button>
+    </div>
+  </header>
 
-<!-- 资料编辑弹窗 -->
-<dialog id="profile-dialog" class="dialog">
-<form method="dialog" class="dialog-body" id="profile-form">
-<h3>编辑资料</h3>
-<label>名字 <input name="name" /></label>
-<label>简介 <textarea name="bio" rows="3"></textarea></label>
-<label>头像 URL <input name="avatarUrl" placeholder="https://..." /></label>
-<label class="muted">或上传头像 <input type="file" id="avatarFile" accept="image/*" /></label>
-<label>背景图 URL <input name="backgroundUrl" placeholder="https://..." /></label>
-<label class="muted">或上传背景图 <input type="file" id="bgFile" accept="image/*" /></label>
-<div class="actions">
-<button class="btn" value="cancel">取消</button>
-<button class="btn primary" value="confirm">保存</button>
-</div>
-</form>
-</dialog>
+  <main class="container">
+    <section class="profile">
+      <img id="avatar" class="avatar" src="/public/default-avatar.png" alt="avatar" />
+      <div class="info">
+        <h1 id="display-name">Your Name</h1>
+        <p id="bio">这里是简介</p>
+        <button id="edit-profile" class="btn small hidden">编辑资料</button>
+      </div>
+    </section>
 
+    <ul id="links" class="links"></ul>
 
-<!-- 链接编辑弹窗 -->
-<dialog id="link-dialog" class="dialog">
-<form method="dialog" class="dialog-body" id="link-form">
-<h3>编辑链接</h3>
-<input type="hidden" name="id" />
-<label>图标（Emoji 或 URL）<input name="icon" placeholder="🔥 或 https://..." /></label>
-<label class="muted">或上传图标 <input type="file" id="iconFile" accept="image/*" /></label>
-<label>显示名称 <input name="title" required /></label>
-<label>链接网址 <input name="url" type="url" required placeholder="https://..." /></label>
-<div class="actions split">
-<button id="delete-link" class="btn danger left" value="delete" type="button">删除</button>
-<div class="right">
-<button class="btn" value="cancel">取消</button>
-<button class="btn primary" value="confirm">保存</button>
-</div>
-</div>
-</form>
-</dialog>
+    <button id="add-link" class="btn dashed hidden">＋ 添加链接</button>
+  </main>
 
+  <!-- 登录弹窗 -->
+  <dialog id="login-dialog" class="dialog">
+    <form method="dialog" class="dialog-body" id="login-form">
+      <h3>管理员登录</h3>
+      <label>账号 <input name="username" required /></label>
+      <label>密码 <input name="password" type="password" required /></label>
+      <div class="actions">
+        <button class="btn" value="cancel">取消</button>
+        <button class="btn primary" value="confirm">登录</button>
+      </div>
+    </form>
+  </dialog>
 
-<script src="/public/app.js" type="module"></script>
+  <!-- 资料编辑弹窗 -->
+  <dialog id="profile-dialog" class="dialog">
+    <form method="dialog" class="dialog-body" id="profile-form">
+      <h3>编辑资料</h3>
+      <label>名字 <input name="name" /></label>
+      <label>简介 <textarea name="bio" rows="3"></textarea></label>
+      <label>头像 URL <input name="avatarUrl" placeholder="https://..." /></label>
+      <label class="muted">或上传头像 <input type="file" id="avatarFile" accept="image/*" /></label>
+      <label>背景图 URL <input name="backgroundUrl" placeholder="https://..." /></label>
+      <label class="muted">或上传背景图 <input type="file" id="bgFile" accept="image/*" /></label>
+      <div class="actions">
+        <button class="btn" value="cancel">取消</button>
+        <button class="btn primary" value="confirm">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 链接编辑弹窗 -->
+  <dialog id="link-dialog" class="dialog">
+    <form method="dialog" class="dialog-body" id="link-form">
+      <h3>编辑链接</h3>
+      <input type="hidden" name="id" />
+      <label>图标（Emoji 或 URL）<input name="icon" placeholder="🔥 或 https://..." /></label>
+      <label class="muted">或上传图标 <input type="file" id="iconFile" accept="image/*" /></label>
+      <label>显示名称 <input name="title" required /></label>
+      <label>链接网址 <input name="url" type="url" required placeholder="https://..." /></label>
+      <div class="actions split">
+        <button id="delete-link" class="btn danger left" value="delete" type="button">删除</button>
+        <div class="right">
+          <button class="btn" value="cancel">取消</button>
+          <button class="btn primary" value="confirm">保存</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/public/app.js" type="module"></script>
 </body>
 </html>
