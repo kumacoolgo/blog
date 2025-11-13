@@ -1,8 +1,10 @@
 {
-"version": 2,
-"routes": [
-{ "src": "/public/(.*)", "dest": "/public/$1" },
-{ "src": "/api/(.*)", "dest": "/api/$1" },
-{ "src": "/(.*)", "dest": "/index.html" }
-]
+  "version": 2,
+  "functions": { "api/*.js": { "runtime": "nodejs18.x" } },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/public/(.*)", "dest": "/public/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "public": "public"
 }
