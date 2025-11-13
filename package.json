@@ -1,0 +1,16 @@
+{
+"name": "links-880913-clone",
+"private": true,
+"type": "module",
+"scripts": {
+"dev": "vercel dev",
+"start": "vercel dev"
+},
+"dependencies": {
+"@aws-sdk/client-s3": "^3.684.0",
+"@upstash/redis": "^1.32.0",
+"busboy": "^1.6.0",
+"nanoid": "^5.0.6",
+"sharp": "^0.33.5"
+}
+}
