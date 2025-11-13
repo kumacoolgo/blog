@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- 注意这里是 /styles.css，而不是 /public/styles.css -->
+  <!-- 静态文件都在 public 下，Vercel 会映射到根目录，所以这里是 /styles.css -->
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -89,7 +89,7 @@
     </form>
   </dialog>
 
-  <!-- 注意这里是 /app.js -->
+  <!-- 前端逻辑 -->
   <script src="/app.js" type="module"></script>
 </body>
 </html>
