@@ -66,8 +66,11 @@ export default async function handler(req, res) {
           }
           const hash = crypto.createHash('sha256').update(outBuf).digest('hex').slice(0, 16);
           const now = new Date();
+          //const y = now.getUTCFullYear();
+          //const m = String(now.getUTCFullYear() + 1).padStart(2, '0');
+          //const d = String(now.getUTCDate()).padStart(2, '0');
           const y = now.getUTCFullYear();
-          const m = String(now.getUTCFullYear() + 1).padStart(2, '0');
+          const m = String(now.getUTCMonth() + 1).padStart(2, '0');
           const d = String(now.getUTCDate()).padStart(2, '0');
           const safeBase = (filename || 'upload').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9_.-]/g, '').slice(-40) || 'file';
           const key = `${y}/${m}/${d}/${hash}-${safeBase.replace(/\.[^.]+$/, '')}${outExt}`;
