@@ -1,13 +1,40 @@
 // api/links.js
 import { nanoid } from 'nanoid';
-import { requireAuth, json, badRequest } from '../lib/auth.js';
+import {
+  requireAuth,
+  requireSameOrigin,
+  json,
+  badRequest,
+  isValidHttpUrl,
+} from '../lib/auth.js';
 import { getRedis } from '../lib/redis.js';
+
+const TITLE_MAX = 100;
+const ICON_MAX = 200;
+
+function sanitizeText(str, maxLen) {
+  str = String(str || '').trim();
+  if (str.length > maxLen) str = str.slice(0, maxLen);
+  return str;
+}
+
+function validateUrl(str) {
+  const v = String(str || '').trim();
+  if (!v) return null;
+  try {
+    const u = new URL(v);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('protocol');
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
 
 export default async function handler(req, res) {
   const r = getRedis();
 
   try {
-    // 1. GET：公开获取链接列表
+    // GET：公开获取链接列表
     if (req.method === 'GET') {
       const ids = await r.lrange('links:order', 0, -1);
       const links = ids.length
@@ -19,32 +46,58 @@ export default async function handler(req, res) {
       return json(res, { links });
     }
 
-    // 2. 下面这些操作都需要登录
+    // 非 GET 需要同源校验 + 登录
+    requireSameOrigin(req, res);
     requireAuth(req, res);
 
-    // 3. POST：新增
+    // POST：新增
     if (req.method === 'POST') {
       const body = req.body || {};
-      const { icon = '', title = '', url = '' } = body;
+      let { icon = '', title = '', url = '' } = body;
 
-      if (!title || !url) return badRequest(res, '缺少字段');
+      title = sanitizeText(title, TITLE_MAX);
+      icon = sanitizeText(icon, ICON_MAX);
+      const safeUrl = validateUrl(url);
+
+      if (!title || !safeUrl) {
+        return badRequest(res, '缺少字段或链接格式不正确');
+      }
+
+      // 图标允许：短 emoji 文本 或 合法 URL
+      if (icon && !isValidHttpUrl(icon) && icon.length > 5) {
+        return badRequest(res, '图标格式不正确');
+      }
 
       const id = nanoid(10);
-      await r.set(`link:${id}`, { icon, title, url });
+      await r.set(`link:${id}`, { icon, title, url: safeUrl });
       await r.rpush('links:order', id);
       return json(res, { id });
     }
 
-    // 4. PUT：更新
+    // PUT：更新
     if (req.method === 'PUT') {
       const body = req.body || {};
-      const { id, icon = '', title = '', url = '' } = body;
+      const { id } = body;
       if (!id) return badRequest(res, '缺少 id');
-      await r.set(`link:${id}`, { icon, title, url });
+
+      let { icon = '', title = '', url = '' } = body;
+      title = sanitizeText(title, TITLE_MAX);
+      icon = sanitizeText(icon, ICON_MAX);
+      const safeUrl = validateUrl(url);
+
+      if (!title || !safeUrl) {
+        return badRequest(res, '缺少字段或链接格式不正确');
+      }
+
+      if (icon && !isValidHttpUrl(icon) && icon.length > 5) {
+        return badRequest(res, '图标格式不正确');
+      }
+
+      await r.set(`link:${id}`, { icon, title, url: safeUrl });
       return json(res, { ok: true });
     }
 
-    // 5. DELETE：删除
+    // DELETE：删除
     if (req.method === 'DELETE') {
       const body = req.body || {};
       const { id } = body;
@@ -54,7 +107,7 @@ export default async function handler(req, res) {
       return json(res, { ok: true });
     }
 
-    // 6. PATCH：重排顺序
+    // PATCH：重排顺序
     if (req.method === 'PATCH') {
       const body = req.body || {};
       const { order } = body;
@@ -67,6 +120,8 @@ export default async function handler(req, res) {
     return badRequest(res, 'Method not allowed');
   } catch (err) {
     console.error('[/api/links] handler error:', err);
-    res.status(500).end('Server error: ' + (err?.message || 'unknown'));
+    if (!res.headersSent) {
+      res.status(500).end('Server error: ' + (err?.message || 'unknown'));
+    }
   }
 }

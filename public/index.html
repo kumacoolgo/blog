@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <!-- 静态文件都在 public 下，Vercel 会映射到根目录，所以这里是 /styles.css -->
+  <!-- 静态文件都在 public 下，Vercel 会映射到根目录 -->
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -91,5 +91,9 @@
 
   <!-- 前端逻辑 -->
   <script src="/app.js" type="module"></script>
+
+  <!-- 全局加载动画 & 错误 Toast -->
+  <div id="loader" class="loader hidden"></div>
+  <div id="error-toast" class="error-toast"></div>
 </body>
 </html>

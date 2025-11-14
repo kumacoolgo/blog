@@ -1,5 +1,28 @@
+// public/app.js
 const $ = (sel, el = document) => el.querySelector(sel);
 const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
+
+// --- 全局 UI 控制 ---
+const $loader = $("#loader");
+const $errorToast = $("#error-toast");
+let errorTimer;
+
+function showLoader() {
+  $loader.classList.remove("hidden");
+}
+function hideLoader() {
+  $loader.classList.add("hidden");
+}
+
+function showError(message) {
+  $errorToast.textContent = message;
+  $errorToast.classList.add("show");
+  clearTimeout(errorTimer);
+  errorTimer = setTimeout(() => {
+    $errorToast.classList.remove("show");
+  }, 3000);
+}
+// --- UI 控制结束 ---
 
 const state = {
   authed: false,
@@ -12,31 +35,49 @@ const state = {
   links: []
 };
 
+// 包一层 API 调用：自动处理 loading & 错误
 async function api(path, opts = {}) {
-  const res = await fetch(path, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    ...opts
-  });
-  if (!res.ok) {
-    throw new Error(await res.text());
+  showLoader();
+  try {
+    const res = await fetch(path, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      ...opts
+    });
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    return res.json();
+  } catch (err) {
+    showError(err.message || "操作失败");
+    throw err;
+  } finally {
+    hideLoader();
   }
-  return res.json();
 }
 
-// 上传图片到 /api/upload（登录后可用）
+// 上传图片到 /api/upload
 async function uploadFile(file) {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: fd,
-    credentials: "include"
-  });
-  if (!res.ok) {
-    throw new Error(await res.text());
+
+  showLoader();
+  try {
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: fd,
+      credentials: "include"
+    });
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    return res.json(); // { url }
+  } catch (err) {
+    showError(err.message || "上传失败");
+    throw err;
+  } finally {
+    hideLoader();
   }
-  return res.json(); // { url }
 }
 
 function render() {
@@ -135,7 +176,11 @@ function setupDragReorder(el) {
   });
   el.addEventListener("dragend", async () => {
     el.classList.remove("dragging");
-    await persistOrder();
+    try {
+      await persistOrder();
+    } catch {
+      // 错误在 api() 内部已经提示
+    }
   });
 
   $("#links").addEventListener("dragover", (e) => {
@@ -200,21 +245,25 @@ $("#login-form").addEventListener("submit", async (e) => {
     });
     $("#login-dialog").close();
     await load();
-  } catch (err) {
-    alert("登录失败：" + err.message);
+  } catch {
+    // 错误由 api() 统一处理
   }
 });
 
 $("#logout-btn").addEventListener("click", async () => {
-  await api("/api/logout", { method: "POST" });
-  await load();
+  try {
+    await api("/api/logout", { method: "POST" });
+    await load();
+  } catch {
+    // 错误由 api() 统一处理
+  }
 });
 
 // 编辑资料
 $("#edit-profile").addEventListener("click", () => {
   const d = $("#profile-dialog");
   $('input[name="name"]', d).value = state.profile.name || "";
-  $("textarea[name=\"bio\"]", d).value = state.profile.bio || "";
+  $('textarea[name="bio"]', d).value = state.profile.bio || "";
   $('input[name="avatarUrl"]', d).value = state.profile.avatarUrl || "";
   $('input[name="backgroundUrl"]', d).value =
     state.profile.backgroundUrl || "";
@@ -227,8 +276,8 @@ $("#avatarFile")?.addEventListener("change", async (e) => {
   try {
     const { url } = await uploadFile(f);
     $('input[name="avatarUrl"]').value = url;
-  } catch (err) {
-    alert("上传失败：" + err.message);
+  } catch {
+    // 错误由 uploadFile() 统一处理
   }
 });
 
@@ -238,8 +287,8 @@ $("#bgFile")?.addEventListener("change", async (e) => {
   try {
     const { url } = await uploadFile(f);
     $('input[name="backgroundUrl"]').value = url;
-  } catch (err) {
-    alert("上传失败：" + err.message);
+  } catch {
+    // 错误由 uploadFile() 统一处理
   }
 });
 
@@ -247,12 +296,16 @@ $("#profile-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.currentTarget);
   const payload = Object.fromEntries(fd);
-  await api("/api/profile", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-  $("#profile-dialog").close();
-  await load();
+  try {
+    await api("/api/profile", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    $("#profile-dialog").close();
+    await load();
+  } catch {
+    // 错误由 api() 统一处理
+  }
 });
 
 // 添加/编辑链接
@@ -269,12 +322,16 @@ function openLinkDialog(link = {}) {
   $("#delete-link").onclick = async () => {
     if (!link.id) return d.close();
     if (confirm("确定删除？")) {
-      await api("/api/links", {
-        method: "DELETE",
-        body: JSON.stringify({ id: link.id })
-      });
-      d.close();
-      await load();
+      try {
+        await api("/api/links", {
+          method: "DELETE",
+          body: JSON.stringify({ id: link.id })
+        });
+        d.close();
+        await load();
+      } catch {
+        // 错误由 api() 统一处理
+      }
     }
   };
 
@@ -284,8 +341,8 @@ function openLinkDialog(link = {}) {
     try {
       const { url } = await uploadFile(f);
       $('input[name="icon"]').value = url;
-    } catch (err) {
-      alert("上传失败：" + err.message);
+    } catch {
+      // 错误由 uploadFile() 统一处理
     }
   });
 }
@@ -300,13 +357,20 @@ $("#link-form").addEventListener("submit", async (e) => {
     title: payload.title,
     url: payload.url
   });
-  await api("/api/links", {
-    method: payload.id ? "PUT" : "POST",
-    body
-  });
-  $("#link-dialog").close();
-  await load();
+  try {
+    await api("/api/links", {
+      method: payload.id ? "PUT" : "POST",
+      body
+    });
+    $("#link-dialog").close();
+    await load();
+  } catch {
+    // 错误由 api() 统一处理
+  }
 });
 
 // 启动
-load().catch((err) => console.error(err));
+load().catch((err) => {
+  console.error(err);
+  showError("初始化加载失败，请刷新页面");
+});
