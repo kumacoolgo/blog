@@ -8,12 +8,16 @@
 }
 *{ box-sizing: border-box; }
 html,body{ height:100%; }
+
 body{
   margin:0;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
   color: var(--text);
   backdrop-filter: blur(var(--bg-blur));
+  overflow: hidden; /* 关键：禁止整页滚动，只让内部容器滚动 */
 }
+
+/* 固定模糊背景 */
 .bg{
   position: fixed;
   inset:0;
@@ -22,6 +26,8 @@ body{
   transform: scale(1.05);
   z-index: -1;
 }
+
+/* 顶部栏固定在最上面 */
 .topbar{
   position: sticky;
   top:0;
@@ -38,7 +44,19 @@ body{
 .user-menu{ display:flex; align-items:center; gap:8px; }
 .user-menu.hidden, .hidden{ display:none; }
 .right{ margin-left: auto; }
-.container{ max-width:720px; margin:36px auto; padding:0 16px; }
+
+/* 中间区域：用 flex 垂直布局，上面 profile，下面 links-scroll 可滚动 */
+.container{
+  max-width:720px;
+  margin:0 auto;
+  padding:16px 16px 16px;
+  height: calc(100vh - 56px); /* 56px ≈ topbar 高度，可按实际微调 */
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+}
+
+/* 头像卡片 */
 .profile{
   display:flex;
   gap:16px;
@@ -56,10 +74,23 @@ body{
 }
 .info h1{ margin: 0 0 6px; font-size: 28px; }
 .info p{ margin:0; color: var(--text-dim); }
+
+/* 只让这一块滚动 */
+.links-scroll{
+  flex:1;
+  min-height:0;              /* 非常关键，允许内部元素 overflow */
+  margin-top:24px;
+  display:flex;
+  flex-direction:column;
+  overflow-y:auto;
+  padding-bottom:24px;
+}
+
+/* 链接列表 */
 .links{
   list-style:none;
   padding:0;
-  margin:24px 0;
+  margin:0;                  /* 间距由 links-scroll 控制 */
   display:flex;
   flex-direction:column;
   gap:12px;
@@ -109,6 +140,8 @@ body{
 .link-right{ display:flex; align-items:center; gap:10px; }
 .edit-btn{ opacity:0; transition: .2s; }
 .link-item:hover .edit-btn{ opacity:1; }
+
+/* 按钮样式 */
 .btn{
   border:1px solid rgba(0,0,0,0.1);
   background:#fff;
@@ -133,7 +166,10 @@ body{
   width:100%;
   padding:12px;
   border-radius: 14px;
+  margin-top:12px;
 }
+
+/* 弹窗 */
 .dialog{ border:none; border-radius:16px; padding:0; }
 .dialog::backdrop{
   background: rgba(0,0,0,0.25);
